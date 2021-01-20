@@ -1,7 +1,8 @@
 const { Shopee } = require('./src/shopee');
 const { question } = require('readline-sync');
 const { sprintf } = require('sprintf-js');
-const { cut_string, parse_price, prompt, wait_until_start, parse_id_from_url } = require('./functions');
+const { cut_string, parse_price, prompt, wait_until_start } = require('./functions');
+
 (async () => {
     const shopee = new Shopee;
 
@@ -65,13 +66,12 @@ const { cut_string, parse_price, prompt, wait_until_start, parse_id_from_url } =
                 ? product.preview_info.preview_end_time
                 : product.upcoming_flash_sale
                     ? product.upcoming_flash_sale.start_time
-                    : 0;
+                    : 0; // Although this value will never reached
 
             await wait_until_start(start_time * 1000);
         }
 
         const cart = await shopee.add_to_cart(product, selected_model);
-
         const pre_checkout = await shopee.pre_checkout(product, selected_model, cart.item_group_id, profile.default_address)
         
         console.log(
