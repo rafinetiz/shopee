@@ -1,18 +1,26 @@
 const { InvalidUrlException } = require('./exception')
+const { question } = require('readline-sync');
 
 module.exports.generate_shopee_url = (product) => {
     const prodname = product.name.replace(/,?\s/g, '-');
     return new URL(`${prodname}-i.${product.shopid}.${product.itemid}`, 'https://shopee.co.id').toString();
 }
 
-module.exports.parse_price = (price) => {
+/**
+ * 
+ * @param {number} price 
+ * @return {string} formatted price
+ */
+module.exports.parse_price = (price, add_prefix = false) => {
     if (isNaN(price)) {
         return price;
     }
 
     const toStr = price.toString();
     const sub   = toStr.substr(0, toStr.length - 5);
-    return Intl.NumberFormat('id-ID', {style: 'decimal'}).format(sub);
+    const formattedPrice = Intl.NumberFormat('id-ID', {style: 'decimal'}).format(sub);
+
+    return add_prefix ? 'Rp. ' + formattedPrice : formattedPrice;
 }
 
 /**
@@ -31,4 +39,22 @@ module.exports.parse_id_from_url = (url) => {
    }
 
    return valid_url.exec(url).groups;
+}
+
+module.exports.cut_string = (str, max_length = 50) => {
+    return str.length > max_length
+        ? `${str.substr(0, max_length)}...`
+        : str
+}
+
+module.exports.prompt = (message) => {
+    process.stdout.write('\033[s');
+    const answer = question(message);
+    process.stdout.write('\033[u\033[0J');
+
+    return answer;
+}
+
+module.exports.now = () => {
+    return Math.round(Date.now() / 1000);
 }

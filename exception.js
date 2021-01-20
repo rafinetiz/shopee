@@ -1,7 +1,7 @@
 
 module.exports.InvalidUrlException = class InvalidUrlException extends Error {
     constructor() {
-        super('URL Tidak Valid')
+        super('URL TIDAK VALID')
         this.code = 'ERRURLINVALID'
     }
 }
