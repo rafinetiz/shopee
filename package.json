@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "axios": "^0.21.1",
+    "express": "^4.17.1",
+    "qrcode-terminal": "^0.12.0",
+    "readline-sync": "^1.4.10",
+    "sprintf-js": "^1.1.2",
+    "tough-cookie": "^4.0.0"
+  }
+}
