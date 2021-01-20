@@ -1,5 +1,6 @@
 const { InvalidUrlException } = require('./exception')
 const { question } = require('readline-sync');
+const { sprintf } = require('sprintf-js');
 
 module.exports.generate_shopee_url = (product) => {
     const prodname = product.name.replace(/,?\s/g, '-');
@@ -57,4 +58,30 @@ module.exports.prompt = (message) => {
 
 module.exports.now = () => {
     return Math.round(Date.now() / 1000);
+}
+
+module.exports.parse_time = (timestamps, fromSeconds = false) => {
+    if (fromSeconds) {
+        timestamps = timestamps * 1000;
+    }
+    const date = new Date(timestamps);
+    const hour = date.getHours() < 10 ? '0' + date.getHours() : date.getHours();
+    const minutes = date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes();
+    const seconds = date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds();
+    return [hour, minutes, seconds].join(':')
+}
+
+module.exports.wait_until_start = async (start_time, msg = '') => {
+    const sleep = () => {return new Promise(resolve => setTimeout(resolve, 1000))};
+
+    let now = Date.now();
+    while (now <= start_time) {
+        process.stdout.write(
+            sprintf('\r\033[KCURRENT TIME %s START TIME %s',
+            this.parse_time(now),
+            this.parse_time(start_time))
+        )
+        await sleep();
+        now = Date.now();
+    }
 }

@@ -119,7 +119,14 @@ class Shopee {
         })
     }
 
-    async pre_checkout(product, model, itemgroupid) {
+    async get_profile() {
+        return this.request_get('/api/v1/account_info', {
+            need_cart: 0,
+            skip_address: 0
+        })
+    }
+
+    async pre_checkout(product, model, itemgroupid, address) {
         let promotionid = null;
 
         if (product.flash_sale !== null || product.upcoming_flash_sale !== null) {
@@ -153,7 +160,8 @@ class Shopee {
             }
         }).then(resp => {
             if (resp.error !== 0) {
-                throw new Error(resp.error_message);
+                console.log(resp)
+                throw new Error(resp.error_msg);
             }
 
             return this.request_post('/api/v2/checkout/get', {
@@ -191,7 +199,7 @@ class Shopee {
                 shipping_orders: [{
                     buyer_address_data: {
                         address_type: 0,
-                        addressid: 56780102,
+                        addressid: address.id,
                         error_status: '',
                         tax_address: ''
                     },
@@ -209,7 +217,7 @@ class Shopee {
                 shoporders: [{
                     buyer_address_data: {
                         address_type: 0,
-                        addressid: 56780102,
+                        addressid: address.id,
                         error_status: '',
                         tax_address: ''
                     },

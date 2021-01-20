@@ -1,14 +1,22 @@
 const { Shopee } = require('./src/shopee');
 const { question } = require('readline-sync');
 const { sprintf } = require('sprintf-js');
-const { cut_string, parse_price, prompt } = require('./functions');
+const { cut_string, parse_price, prompt, wait_until_start, parse_id_from_url } = require('./functions');
 (async () => {
     const shopee = new Shopee;
 
+    /*
     ['csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ',
      'SPC_CLIENTID=VnhyNDkzSU1HbVg3efpwrsljhahcomib',
      'SPC_EC=IUgFzI3933f0D3sSx+k5z7xh1VBN6hZPqrfW36Nw91oQmMiLCBTe1SazlWB1YxLm1mXv9zZ9vE1Ae/94tYYnC9fdLLm4ZyflYQ0wRaJZSgKz8rkSxgtCz5V+UV7Tr48YC+7A6kqP3zVtS5h/ovgTlCSobE4xKsK+IsLlQLW5/Os=',
      'SPC_U=346619839'
+    ].forEach(value => shopee.set_cookie(value))
+    */
+
+    ['csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ',
+     'SPC_U=271661662',
+     'SPC_CLIENTID=VnhyNDkzSU1HbVg3efpwrsljhahcomib',
+     'SPC_EC=zCNn7CksI+7xxYQoNo7m08VHFkQnBpOeYOwj3sMZSC7hgGa+/KQCZhqlfea1ZxMskxpbXpWLJXbsnUHI7VFfTWReEEueCkirjqt7Ol5wWIuQoyS6ic5n3qiZeS9Wz1Wjap8fIhdemzb7EYXnur4o3olMKus3yNaoqlP7jguk8Oc='
     ].forEach(value => shopee.set_cookie(value))
 
     try {
@@ -17,6 +25,10 @@ const { cut_string, parse_price, prompt } = require('./functions');
         const product = await shopee.get_product(producturl);
         const model   = product.models;
 
+        const profile = await shopee.get_profile();
+        console.log(
+            sprintf('LOGGED AS \033[1m%s\033[0m\n', profile.username)
+        )
         console.log(
             sprintf(
                 '%-7s %s\n%-7s %s%s',
@@ -47,8 +59,20 @@ const { cut_string, parse_price, prompt } = require('./functions');
             selected_model.modelid
         ))
 
+        if (product.preview_info !== null || product.upcoming_flash_sale !== null) {        
+            console.log('WAITING UNTIL PRODUCT AVAILABLE TO PURCHASE');
+            let start_time = product.preview_info
+                ? product.preview_info.preview_end_time
+                : product.upcoming_flash_sale
+                    ? product.upcoming_flash_sale.start_time
+                    : 0;
+
+            await wait_until_start(start_time * 1000);
+        }
+
         const cart = await shopee.add_to_cart(product, selected_model);
-        const pre_checkout = await shopee.pre_checkout(product, selected_model, cart.item_group_id)
+
+        const pre_checkout = await shopee.pre_checkout(product, selected_model, cart.item_group_id, profile.default_address)
         
         console.log(
             sprintf(
