@@ -14,10 +14,18 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
     ].forEach(value => shopee.set_cookie(value))
     */
 
+    /*
     ['csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ',
-     'SPC_U=271661662',
+     'SPC_U=39194129',
      'SPC_CLIENTID=VnhyNDkzSU1HbVg3efpwrsljhahcomib',
      'SPC_EC=zCNn7CksI+7xxYQoNo7m08VHFkQnBpOeYOwj3sMZSC7hgGa+/KQCZhqlfea1ZxMskxpbXpWLJXbsnUHI7VFfTWReEEueCkirjqt7Ol5wWIuQoyS6ic5n3qiZeS9Wz1Wjap8fIhdemzb7EYXnur4o3olMKus3yNaoqlP7jguk8Oc='
+    ].forEach(value => shopee.set_cookie(value))*/
+
+
+    ['csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ',
+     'SPC_U=271661662',
+     'SPC_CLIENTID=WUdLV285Wk9pMnU5sglamxeujozstuia',
+     'SPC_EC=proQy0vdYuIqCVrjTKfU4Ihf/27q+zvMStI2/Sm/HTnKmjKm/ptQ82ontcqkFxaehSRYL3FZzKp5zFVv3KGD+2s+vvseIQ/54EUDkIwdVEqnhlwU/4yiXErgXs3uQgIk24b5JbKNcW29OqpdregNHw=='
     ].forEach(value => shopee.set_cookie(value))
 
     try {
@@ -86,6 +94,7 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
         
         const checkout_now = prompt('Checkout now (y/n)? ');
         if (checkout_now.toLowerCase() !== 'y') {
+            console.log('CANCELED BY USER!')
             return;
         }
 

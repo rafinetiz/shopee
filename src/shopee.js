@@ -207,7 +207,7 @@ class Shopee {
                     logistics: {
                         recommended_channelids: null
                     },
-                    selected_logistic_channelid: 80014, // J&T
+                    selected_logistic_channelid: 80088, // J&T
                     selected_preferred_delivery_time_option_id: 0,
                     selected_preferred_delivery_time_slot_id: null,
                     shipping_id: 1,
@@ -232,7 +232,7 @@ class Shopee {
                     logistics: {
                         recommended_channelids: null
                     },
-                    selected_logistic_channelid: 80014, // J&T
+                    selected_logistic_channelid: 80088, // J&T
                     selected_preferred_delivery_time_option_id: 0,
                     selected_preferred_delivery_time_slot_id: null,
                     shipping_id: 1,
