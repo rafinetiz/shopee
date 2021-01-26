@@ -3,38 +3,24 @@ const { sprintf } = require('sprintf-js');
 const { cut_string, parse_price, prompt, wait_until_start } = require('./functions');
 
 (async () => {
-    const shopee = new Shopee;
-
-    /*
-    ['csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ',
-     'SPC_CLIENTID=VnhyNDkzSU1HbVg3efpwrsljhahcomib',
-     'SPC_EC=IUgFzI3933f0D3sSx+k5z7xh1VBN6hZPqrfW36Nw91oQmMiLCBTe1SazlWB1YxLm1mXv9zZ9vE1Ae/94tYYnC9fdLLm4ZyflYQ0wRaJZSgKz8rkSxgtCz5V+UV7Tr48YC+7A6kqP3zVtS5h/ovgTlCSobE4xKsK+IsLlQLW5/Os=',
-     'SPC_U=346619839'
-    ].forEach(value => shopee.set_cookie(value))*/
-
-    ['csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ',
-     'SPC_U=39194129',
-     'SPC_CLIENTID=VnhyNDkzSU1HbVg3efpwrsljhahcomib',
-     'SPC_EC=zCNn7CksI+7xxYQoNo7m08VHFkQnBpOeYOwj3sMZSC7hgGa+/KQCZhqlfea1ZxMskxpbXpWLJXbsnUHI7VFfTWReEEueCkirjqt7Ol5wWIuQoyS6ic5n3qiZeS9Wz1Wjap8fIhdemzb7EYXnur4o3olMKus3yNaoqlP7jguk8Oc='
-    ].forEach(value => shopee.set_cookie(value))
-
-    /*
-    ['csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ',
-     'SPC_U=271661662',
-     'SPC_CLIENTID=WUdLV285Wk9pMnU5sglamxeujozstuia',
-     'SPC_EC=proQy0vdYuIqCVrjTKfU4Ihf/27q+zvMStI2/Sm/HTnKmjKm/ptQ82ontcqkFxaehSRYL3FZzKp5zFVv3KGD+2s+vvseIQ/54EUDkIwdVEqnhlwU/4yiXErgXs3uQgIk24b5JbKNcW29OqpdregNHw=='
-    ].forEach(value => shopee.set_cookie(value))*/
-
     try {
-        const producturl = prompt('PRODUCT URL: ');
+        const argv = process.argv.slice(2);
+    
+        if (argv.length < 1) {
+            console.log('usage: index.js <user>');
+            process.exit(1)
+        }
 
-        const product = await shopee.get_product(producturl);
-        const model   = product.models;
-
+        const shopee = new Shopee(argv[0]);
         const profile = await shopee.get_profile();
         console.log(
             sprintf('LOGGED AS \033[1m%s\033[0m\n', profile.username)
         )
+
+        const producturl = prompt('PRODUCT URL: ');
+        const product = await shopee.get_product(producturl);
+        const model   = product.models;
+
         console.log(
             sprintf(
                 '%-7s %s\n%-7s %s%s',
@@ -44,14 +30,18 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
             )
         )
 
-        console.log('MODEL/VARIANT/SIZE');
+        console.log(sprintf(
+            '%-4s %-20s %-5s %s',
+            'ID', 'MODEL/VARIANT/SIZE', 'STOCK', 'PRICE'
+        ));
+
         model.forEach((item, index) => {
-            const { name, price } = item;
+            const { name, price, stock } = item;
 
             console.log(
                 sprintf(
-                    '[%2d] %-17s %s', 
-                    index, cut_string(name, 14), parse_price(price, true)
+                    '[%2d] %-20s %-5d %s', 
+                    index, cut_string(name, 14), stock, parse_price(price, true)
                 )
             )
         })
@@ -72,7 +62,7 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
                     ? product.upcoming_flash_sale.start_time
                     : 0; // Although this value will never reached // need better logic XD
 
-            await wait_until_start(start_time * 1000);
+            await wait_until_start(start_time);
         }
 
         const cart = await shopee.add_to_cart(product, selected_model);
@@ -114,9 +104,10 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
                 break;
             default: 
                 console.log('error:\033[31m', err.message)
+                console.log(err.request)
                 break;
         }
 
-        process.stdout.write('\033[30m')
+        process.stdout.write('\033[0m')
     }
 })();

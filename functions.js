@@ -56,14 +56,16 @@ module.exports.prompt = (message) => {
     return answer;
 }
 
+/**
+ * @return {number} mengembalikan waktu sekarang dalam bentuk timestamps detik
+ */
 module.exports.now = () => {
     return Math.round(Date.now() / 1000);
 }
 
 module.exports.parse_time = (timestamps, fromSeconds = false) => {
-    if (fromSeconds) {
-        timestamps = timestamps * 1000;
-    }
+    if (fromSeconds) timestamps = timestamps * 1000;
+    
     const date = new Date(timestamps);
     const hour = date.getHours() < 10 ? '0' + date.getHours() : date.getHours();
     const minutes = date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes();
@@ -71,19 +73,16 @@ module.exports.parse_time = (timestamps, fromSeconds = false) => {
     return [hour, minutes, seconds].join(':')
 }
 
-module.exports.wait_until_start = async (start_time, msg = '') => {
-    const sleep = () => {return new Promise(resolve => setTimeout(resolve, 1000))};
-
-    let now = Date.now();
+module.exports.wait_until_start = async (start_time) => {
+    let now = this.now();
     process.stdout.write('\033[sWAITING UNTIL PRODUCT AVAILABLE TO PURCHASE\n')
-    while (now <= start_time) {
+    while (now <= start_time + 5) {
         process.stdout.write(
             sprintf('\r\033[KCURRENT TIME %s START TIME %s',
-            this.parse_time(now),
-            this.parse_time(start_time))
+            this.parse_time(now, true),
+            this.parse_time(start_time + 5, true))
         )
-        //await sleep();
-        now = Date.now();
+        now = this.now();
     }
     process.stdout.write('\033[u\033[0J')
 }
