@@ -1,10 +1,12 @@
 const axios = require('axios').default;
 const { CookieJar } = require('tough-cookie');
-const { parse_id_from_url, now, prompt } = require('../functions');
+const { parse_id_from_url } = require('../functions');
 const { CheckoutFailed, CartError } = require('../exception');
+const fs = require('fs');
+const path = require('path');
 
 class Shopee {
-    constructor() {
+    constructor(user) {
         this.cookiejar = new CookieJar;
         this.http = axios.create({
             baseURL: 'https://shopee.co.id',
@@ -41,10 +43,28 @@ class Shopee {
 
             return resconfig;
         })
+
+        const userdata = this.readUserFile(user);
+        for (const key in userdata) {
+            const cookiestr = [key, userdata[key]].join('=');
+            this.set_cookie(cookiestr)
+        }
+
+        this.set_cookie('csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ')
     }
 
-    async set_cookie(cookie) {
-        this.cookiejar.setCookieSync(cookie, 'https://shopee.co.id');
+    set_cookie(cookiestr) {
+        this.cookiejar.setCookieSync(cookiestr, 'https://shopee.co.id')
+    }
+
+    readUserFile(user) {
+        const userpath = path.resolve('account', user + '.json');
+
+        if (fs.existsSync(userpath) === false) {
+            throw new Error('user not found')
+        }
+
+        return JSON.parse(fs.readFileSync(userpath))
     }
 
     async request_get(endpoint, query = {}) {
