@@ -1,5 +1,4 @@
 const { Shopee } = require('./src/shopee');
-const { question } = require('readline-sync');
 const { sprintf } = require('sprintf-js');
 const { cut_string, parse_price, prompt, wait_until_start } = require('./functions');
 
@@ -11,22 +10,20 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
      'SPC_CLIENTID=VnhyNDkzSU1HbVg3efpwrsljhahcomib',
      'SPC_EC=IUgFzI3933f0D3sSx+k5z7xh1VBN6hZPqrfW36Nw91oQmMiLCBTe1SazlWB1YxLm1mXv9zZ9vE1Ae/94tYYnC9fdLLm4ZyflYQ0wRaJZSgKz8rkSxgtCz5V+UV7Tr48YC+7A6kqP3zVtS5h/ovgTlCSobE4xKsK+IsLlQLW5/Os=',
      'SPC_U=346619839'
-    ].forEach(value => shopee.set_cookie(value))
-    */
+    ].forEach(value => shopee.set_cookie(value))*/
 
-    /*
     ['csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ',
      'SPC_U=39194129',
      'SPC_CLIENTID=VnhyNDkzSU1HbVg3efpwrsljhahcomib',
      'SPC_EC=zCNn7CksI+7xxYQoNo7m08VHFkQnBpOeYOwj3sMZSC7hgGa+/KQCZhqlfea1ZxMskxpbXpWLJXbsnUHI7VFfTWReEEueCkirjqt7Ol5wWIuQoyS6ic5n3qiZeS9Wz1Wjap8fIhdemzb7EYXnur4o3olMKus3yNaoqlP7jguk8Oc='
-    ].forEach(value => shopee.set_cookie(value))*/
+    ].forEach(value => shopee.set_cookie(value))
 
-
+    /*
     ['csrftoken=flFWydS4aweQolep1NhvAtHezfYlk6gZ',
      'SPC_U=271661662',
      'SPC_CLIENTID=WUdLV285Wk9pMnU5sglamxeujozstuia',
      'SPC_EC=proQy0vdYuIqCVrjTKfU4Ihf/27q+zvMStI2/Sm/HTnKmjKm/ptQ82ontcqkFxaehSRYL3FZzKp5zFVv3KGD+2s+vvseIQ/54EUDkIwdVEqnhlwU/4yiXErgXs3uQgIk24b5JbKNcW29OqpdregNHw=='
-    ].forEach(value => shopee.set_cookie(value))
+    ].forEach(value => shopee.set_cookie(value))*/
 
     try {
         const producturl = prompt('PRODUCT URL: ');
@@ -53,7 +50,7 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
 
             console.log(
                 sprintf(
-                    '[%2d] %-14s %s', 
+                    '[%2d] %-17s %s', 
                     index, cut_string(name, 14), parse_price(price, true)
                 )
             )
@@ -69,19 +66,18 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
         ))
 
         if (product.preview_info !== null || product.upcoming_flash_sale !== null) {        
-            console.log('WAITING UNTIL PRODUCT AVAILABLE TO PURCHASE');
             let start_time = product.preview_info
                 ? product.preview_info.preview_end_time
                 : product.upcoming_flash_sale
                     ? product.upcoming_flash_sale.start_time
-                    : 0; // Although this value will never reached
+                    : 0; // Although this value will never reached // need better logic XD
 
             await wait_until_start(start_time * 1000);
         }
 
         const cart = await shopee.add_to_cart(product, selected_model);
-        const pre_checkout = await shopee.pre_checkout(product, selected_model, cart.item_group_id, profile.default_address)
-        
+        const pre_checkout = await shopee.pre_checkout(cart, profile.default_address)
+        console.log('\nCHECKOUT SUMMARY')
         console.log(
             sprintf(
                 '%-8s Rp. %s\n%-8s Rp. %s\n%-8s Rp. %s\n%-8s Rp. %s',
@@ -98,16 +94,29 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
             return;
         }
 
-        await shopee.checkout(pre_checkout);
+        const checkout = await shopee.checkout(pre_checkout);
+        console.log(
+            sprintf(
+                '\n\033[30mCHECKOUT SUCCESS\033[0m\nPLEASE OPEN THIS LINK TO CONTINUE FOR PAYMENT\n%s',
+                checkout.redirect_url
+            )
+        )
     } catch (err) {
-        console.log(err)
         switch (err.code) {
             case 'ERRURLINVALID':
-                console.log('[ERROR]', err.message);
+                console.log('error:\033[31m', err.message);
                 break;
-            default:
-                console.log(err.message);
+            case 'ERRCHECKOUTFAILED':
+                console.log('checkout failed:\033[31m', err.message)
+                break;
+            case 'ERRCART':
+                console.log('add_to_cart error:\033[31m', err.message)
+                break;
+            default: 
+                console.log('error:\033[31m', err.message)
                 break;
         }
+
+        process.stdout.write('\033[30m')
     }
 })();

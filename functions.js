@@ -75,13 +75,15 @@ module.exports.wait_until_start = async (start_time, msg = '') => {
     const sleep = () => {return new Promise(resolve => setTimeout(resolve, 1000))};
 
     let now = Date.now();
+    process.stdout.write('\033[sWAITING UNTIL PRODUCT AVAILABLE TO PURCHASE\n')
     while (now <= start_time) {
         process.stdout.write(
             sprintf('\r\033[KCURRENT TIME %s START TIME %s',
             this.parse_time(now),
             this.parse_time(start_time))
         )
-        await sleep();
+        //await sleep();
         now = Date.now();
     }
+    process.stdout.write('\033[u\033[0J')
 }

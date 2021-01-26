@@ -12,3 +12,10 @@ module.exports.CheckoutFailed = class CheckoutFailed extends Error {
         this.code = 'ERRCHECKOUTFAILED'
     }
 }
+
+module.exports.CartError = class CartError extends Error {
+    constructor(str) {
+        super(str)
+        this.code = 'ERRCART'
+    }
+}

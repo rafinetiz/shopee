@@ -1,7 +1,7 @@
 const axios = require('axios').default;
 const { CookieJar } = require('tough-cookie');
 const { parse_id_from_url, now, prompt } = require('../functions');
-const { CheckoutFailed } = require('../exception');
+const { CheckoutFailed, CartError } = require('../exception');
 
 class Shopee {
     constructor() {
@@ -64,6 +64,13 @@ class Shopee {
         });
     }
 
+    async get_profile() {
+        return this.request_get('/api/v1/account_info', {
+            need_cart: 0,
+            skip_address: 0
+        })
+    }
+
     async get_product(url) {
         const {shopid, productid} = parse_id_from_url(url);
 
@@ -72,13 +79,9 @@ class Shopee {
             itemid: productid
         }).then(resp => {
             const data = resp.item;
-            let add_on_id = null;
-            if (data.add_on_deal_info !== null) {
-                add_on_id = data.add_on_deal_info.add_on_deal_id;
-            }
+
             return {
                 name: data.name,
-                add_on_deal_id: add_on_id,
                 itemid: data.itemid,
                 shopid: data.shopid,
                 models: data.models,
@@ -87,7 +90,6 @@ class Shopee {
                 preview_info: data.preview_info,
                 flash_sale: data.flash_sale,
                 upcoming_flash_sale: data.upcoming_flash_sale,
-                status: data.status,
                 refurl: url
             };
         })
@@ -113,72 +115,66 @@ class Shopee {
             }
         }).then(resp => {
             if (resp.error !== 0) {
-                throw new Error(resp.data)
+                switch (resp.error) {
+                    case 6: // Barang habis
+                        throw new CartError('BARANG HABIS');
+                    default:
+                        throw new CartError('FAILED TO ADD PRODUCT TO CART')
+                }
             }
-            return resp.data.cart_item;
+
+            return this.request_post('/api/v4/cart/get', {
+                pre_selected_item_list: []
+            })
+        }).then(resp => {
+            const cartdata = {};
+            for (const cart_item of resp.data.shop_orders) {
+                if (cart_item.shop.shopid == shopid) {
+                    const itemdata = cart_item.items[0];
+                    cartdata.add_on_deal_id = itemdata.add_on_deal_id
+                    cartdata.applied_promotion_id = itemdata.applied_promotion_id
+                    cartdata.is_add_on_sub_item = itemdata.is_add_on_sub_item
+                    cartdata.item_group_id = itemdata.item_group_id
+                    cartdata.cart_item_change_time = itemdata.cart_item_change_time
+                    cartdata.quantity = itemdata.quantity
+                    cartdata.price = itemdata.price
+                    cartdata.offerid = itemdata.offerid
+                    cartdata.itemid = itemdata.itemid
+                    cartdata.modelid = itemdata.modelid
+                    cartdata.status = itemdata.status
+                    console.log('PROMOID',  itemdata.applied_promotion_id)
+                    break;
+                }
+            }
+
+            return {
+                shopid: shopid,
+                item: cartdata
+            }
         })
     }
 
-    async get_profile() {
-        return this.request_get('/api/v1/account_info', {
-            need_cart: 0,
-            skip_address: 0
-        })
-    }
-
-    async pre_checkout(product, model, itemgroupid, address) {
-        let promotionid = null;
-
-        if (product.flash_sale !== null || product.upcoming_flash_sale !== null) {
-            promotionid = product.flash_sale.promotionid ?? product.upcoming_flash_sale.promotionid;
-        } else {
-            promotionid = model.promotionid
-        }
-
+    async pre_checkout(cartdata, address) {
         return this.request_post('/api/v4/cart/checkout', {
             platform_vouchers: [],
             selected_shop_order_ids: [{
-                shopid: product.shopid,
+                shopid: cartdata.shopid,
                 shop_vouchers: [],
-                item_briefs: [{
-                    add_on_deal_id: product.add_on_deal_id,
-                    applied_promotion_id: promotionid,
-                    cart_item_change_time: now(),
-                    is_add_on_sub_item: null,
-                    item_group_id: itemgroupid == 0 ? null : itemgroupid,
-                    itemid: product.itemid,
-                    modelid: model.modelid,
-                    offerid: null,
-                    price: model.price,
-                    quantity: 1,
-                    status: 1
-                }]
+                item_briefs: [cartdata.item]
             }]
-        }, {
-            headers: {
-                'Referer': 'https://shopee.co.id/cart'
-            }
         }).then(resp => {
             if (resp.error !== 0) {
                 console.log(resp)
-                throw new Error(resp.error_msg);
+                throw new CheckoutFailed('checkout failed')
             }
-
+            
             return this.request_post('/api/v2/checkout/get', {
-                cart_type: 0,
-                client_id: 0,
                 device_info: {
                     buyer_payment_info: {},
                     device_fingerprint: '',
                     device_id: '',
                     tongdun_blackbox: ''
                 },
-                dropshipping_info: {
-                    enabled: false,
-                    phone_number: '',
-                    name: ''
-                },
-                order_update_info: {},
                 promotion_data: {
                     auto_apply_shop_voucher: false,
                     check_shop_voucher_entrances: true,
@@ -196,24 +192,6 @@ class Shopee {
                     channel_item_option_info: {},
                     version: 2
                 },
-                shipping_orders: [{
-                    buyer_address_data: {
-                        address_type: 0,
-                        addressid: address.id,
-                        error_status: '',
-                        tax_address: ''
-                    },
-                    buyer_ic_number: '',
-                    logistics: {
-                        recommended_channelids: null
-                    },
-                    selected_logistic_channelid: 80088, // J&T
-                    selected_preferred_delivery_time_option_id: 0,
-                    selected_preferred_delivery_time_slot_id: null,
-                    shipping_id: 1,
-                    shoporder_indexes: [0],
-                    sync: true
-                }],
                 shoporders: [{
                     buyer_address_data: {
                         address_type: 0,
@@ -221,36 +199,23 @@ class Shopee {
                         error_status: '',
                         tax_address: ''
                     },
-                    items: [{
-                        add_on_deal_id: 0,
-                        is_add_on_sub_item: false,
-                        item_group_id: 0,
-                        itemid: product.itemid,
-                        modelid: model.modelid,
-                        quantity: 1
-                    }],
+                    items: [cartdata.item],
                     logistics: {
                         recommended_channelids: null
                     },
-                    selected_logistic_channelid: 80088, // J&T
+                    // selected_logistic_channelid: 80014, // J&T
                     selected_preferred_delivery_time_option_id: 0,
                     selected_preferred_delivery_time_slot_id: null,
                     shipping_id: 1,
-                    shop: {shopid: product.shopid}
+                    shop: {
+                        shopid: cartdata.shopid
+                    }
                 }],
-                tax_info: {
-                    tax_id: ''
-                },
-                timestamp: now()
-            }, {
-                headers: {
-                    'Referer': 'https://shopee.co.id/checkout'
-                }
             })
         }).then(resp => {
-            if (resp.error !== undefined || resp.can_checkout == false) {
+            if (resp.can_checkout == false) {
                 console.log(resp)
-                throw new CheckoutFailed(resp.error_msg ?? resp.disabled_checkout_info.description)
+                throw new CheckoutFailed(resp.disabled_checkout_info.description)
             }
 
             return resp;
@@ -263,7 +228,11 @@ class Shopee {
             headers: {},
             status: 200
         }).then(resp => {
-            console.log(resp)
+            if (resp.error !== undefined) {
+                throw new CheckoutFailed(resp.error_msg)
+            }
+
+            return resp;
         })
     }
 }
