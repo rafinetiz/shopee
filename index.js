@@ -62,7 +62,7 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
                     ? product.upcoming_flash_sale.start_time
                     : 0; // Although this value will never reached // need better logic XD
 
-            await wait_until_start(start_time);
+            await wait_until_start(start_time + 1); // Add 2 seconds
         }
 
         const cart = await shopee.add_to_cart(product, selected_model);
@@ -77,17 +77,11 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
                 'TOTAL', parse_price(pre_checkout.checkout_price_data.total_payable)
             )
         )
-        
-        const checkout_now = prompt('Checkout now (y/n)? ');
-        if (checkout_now.toLowerCase() !== 'y') {
-            console.log('CANCELED BY USER!')
-            return;
-        }
 
         const checkout = await shopee.checkout(pre_checkout);
         console.log(
             sprintf(
-                '\n\033[30mCHECKOUT SUCCESS\033[0m\nPLEASE OPEN THIS LINK TO CONTINUE FOR PAYMENT\n%s',
+                '\n\033[32mCHECKOUT SUCCESS\033[0m\nPLEASE OPEN THIS LINK TO CONTINUE FOR PAYMENT\n%s',
                 checkout.redirect_url
             )
         )
@@ -104,7 +98,6 @@ const { cut_string, parse_price, prompt, wait_until_start } = require('./functio
                 break;
             default: 
                 console.log('error:\033[31m', err.message)
-                console.log(err.request)
                 break;
         }
 

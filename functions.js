@@ -76,11 +76,11 @@ module.exports.parse_time = (timestamps, fromSeconds = false) => {
 module.exports.wait_until_start = async (start_time) => {
     let now = this.now();
     process.stdout.write('\033[sWAITING UNTIL PRODUCT AVAILABLE TO PURCHASE\n')
-    while (now <= start_time + 5) {
+    while (now <= start_time) {
         process.stdout.write(
             sprintf('\r\033[KCURRENT TIME %s START TIME %s',
             this.parse_time(now, true),
-            this.parse_time(start_time + 5, true))
+            this.parse_time(start_time, true))
         )
         now = this.now();
     }
